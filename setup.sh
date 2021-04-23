@@ -4,7 +4,7 @@
 
 BASE_DIR=$(dirname $0)
 
-# Initialize and update submodules
+Initialize and update submodules
 echo Initializing git submodules...
 git submodule init && git submodule update
 echo
@@ -15,7 +15,7 @@ virtualenv -p python3 venv || python3 -m venv venv
 venv/bin/pip install -r requirements.txt
 echo
 
-# Setup julia environment
+Setup julia environment
 echo Setting up julia environment...
 julia --project -e "import Pkg; Pkg.instantiate()"
 echo

@@ -6,7 +6,8 @@ include("GloVe.jl")
 include("Bias.jl")
 
 
-target = get(ARGS, 1, "C0-V15-W8-D75-R0.05-E300")
+# target = get(ARGS, 1, "C0-V15-W8-D75-R0.05-E300")
+target = get(ARGS, 1, "C0-V20-W8-D75-R0.05-E15")
 pert_dir = get(ARGS, 2, "results/perturbations")
 embedding_dir = get(ARGS, 3, "embeddings")
 

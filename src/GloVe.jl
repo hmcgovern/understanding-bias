@@ -37,6 +37,7 @@ end
 
 # Load the GloVe binary vectors
 function load_bin_vectors(filename, V)
+    # printf('load bin vectors: filename %s V %s', filename, V)
     n = div(filesize(filename), 8) # Total number of params (8 bytes per real)
     dim = div(n - 2*V, 2*V) # Solve for dimension of embedding
     W = zeros(V, dim)
@@ -65,6 +66,7 @@ end
 
 # Convenience wrapper to simplify loading
 function load_model(embedding_path)
+    # printf('load model: embedding path %s', embedding_path)
     vocab_path = "$(dirname(embedding_path))/vocab$(match(r"-C[0-9]+-V[0-9]+", embedding_path).match).txt"
     vocab, ivocab = load_vocab(vocab_path)
     d = parse(Int64, match(r"-W[0-9]+", embedding_path).match[3:end])  # window
@@ -78,6 +80,7 @@ end
 
 # Convenience wrapper to simplify loading
 function load_model(embedding_path, vocab_path)
+    # printf('load model: embedding path %s vocab path %s', embedding_path, vocab_path)
     vocab, ivocab = load_vocab(vocab_path)
     d = parse(Int64, match(r"-W[0-9]+", embedding_path).match[3:end])  # window
     V = length(vocab)

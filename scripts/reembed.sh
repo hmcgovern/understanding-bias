@@ -53,13 +53,16 @@ for pert_path in $(ls $PERT_DIR/$TARGET/pert-*); do
   TMP=${TMP%%.bin}
   for SEED in $(seq 1 5); do
       SAVE_FILE=$RESULTS_DIR/vectors-${TMP}_$SEED  # Don't include .bin
+      # adding this check so it doesn't remake
+      if [ ! -f $SAVE_FILE ]; then
+        echo "Reshuffling with seed $SEED"
+        $BUILD_DIR/shuffle -memory $MEMORY -verbose $VERBOSE -temp-file $TEMP_FILE -seed $SEED < $TMP_COOC_FILE > $TMP_SHUF_FILE
 
-      echo "Reshuffling with seed $SEED"
-      $BUILD_DIR/shuffle -memory $MEMORY -verbose $VERBOSE -temp-file $TEMP_FILE -seed $SEED < $TMP_COOC_FILE > $TMP_SHUF_FILE
-
-      echo "Retraining with seed $SEED"
-      $BUILD_DIR/glove -save-file $SAVE_FILE -threads $NUM_THREADS -input-file $TMP_SHUF_FILE -iter $MAX_ITER -checkpoint-every 0 -vector-size $VECTOR_SIZE -binary 1 -vocab-file $VOCAB_FILE -eta $ETA -verbose $VERBOSE -seed $SEED
-
+        echo "Retraining with seed $SEED"
+        $BUILD_DIR/glove -save-file $SAVE_FILE -threads $NUM_THREADS -input-file $TMP_SHUF_FILE -iter $MAX_ITER -checkpoint-every 0 -vector-size $VECTOR_SIZE -binary 1 -vocab-file $VOCAB_FILE -eta $ETA -verbose $VERBOSE -seed $SEED
+      else
+        echo "${SAVE_FILE} already exists. Moving on.."
+      fi
       # Clean up
       rm $TMP_SHUF_FILE
   done

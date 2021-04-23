@@ -17,7 +17,8 @@ include("utils.jl")
 
 
 # Command ARGS
-const target = get(ARGS, 1, "C0-V15-W8-D75-R0.05-E300")
+const target = get(ARGS, 1, "C0-V20-W8-D25-R0.05-E15")
+# const target = get(ARGS, 1, "C0-V15-W8-D75-R0.05-E300")
 const diff_bias_dir = get(ARGS, 2, "results/diff_bias")
 const embedding_dir = get(ARGS, 3, "embeddings")
 const corpus_dir = get(ARGS, 4, "corpora")
@@ -35,7 +36,6 @@ const (vocab, ivocab) = GloVe.load_vocab(vocab_path)
 const window = parse(Int, match(r"W[0-9]+", target).match[2:end])
 
 const set_sizes = corpus_prefix == "nyt" ? [100, 300, 1000, 3000, 10000] : [10, 30, 100, 300, 1000]
-
 
 # Load a bunch of diff bias results and average them
 function load_df(target, bias_col=:ΔBIF_1)
@@ -66,7 +66,8 @@ function make_perturbation(name, article_ids, biases, out_dir; verbose=true)
     articles = Corpora.get_texts(corpus, article_ids)
     δX = GloVe.docs2cooc(articles, vocab, window)
     bias = sum(biases)
-    data = (name, nnz(δX), vecnorm(δX), bias)
+    # data = (name, nnz(δX), vecnorm(δX), bias)
+    data = (name, nnz(δX), norm(δX), bias)
     GloVe.save_coocs(joinpath(out_dir, "pert-$name.bin"), δX)
     verbose && println("Done.\n")
 end
