@@ -8,12 +8,15 @@ using ForwardDiff
     test_corpus_path = "test_corpus.txt"
     test_cooc_path = "test_cooc.bin"
     embedding_path = "../embeddings/vectors-C0-V20-W8-D25-R0.05-E15-S1.bin"
+    # embedding_path = "../embeddings/vectors-C0-V20-W8-D75-R0.05-E300-S1.bin"
     full_cooc_path = "../embeddings/cooc-C0-V20-W8.bin"
 
     @testset "Model loading" begin
         global M = GloVe.load_model(embedding_path)
         @test M.D == 25 # vector dim
+        # @test M.D == 75
         @test M.d == 8 # window
+        # @test M.d == 10 # window
         # Test against some random examples from `head vocab.txt`
         @test M.ivocab[3] == "and"
         @test M.vocab["is"] == GloVe.WORD_INFO(6, 213234)

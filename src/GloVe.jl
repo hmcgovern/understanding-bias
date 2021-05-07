@@ -4,6 +4,11 @@ module GloVe
 using SparseArrays
 using LinearAlgebra
 
+#mine
+using CSV
+using DataFrames
+using ProgressBars
+
 export CREC, WORD_INFO
 
 
@@ -66,7 +71,6 @@ end
 
 # Convenience wrapper to simplify loading
 function load_model(embedding_path)
-    # printf('load model: embedding path %s', embedding_path)
     vocab_path = "$(dirname(embedding_path))/vocab$(match(r"-C[0-9]+-V[0-9]+", embedding_path).match).txt"
     vocab, ivocab = load_vocab(vocab_path)
     d = parse(Int64, match(r"-W[0-9]+", embedding_path).match[3:end])  # window
@@ -80,7 +84,6 @@ end
 
 # Convenience wrapper to simplify loading
 function load_model(embedding_path, vocab_path)
-    # printf('load model: embedding path %s vocab path %s', embedding_path, vocab_path)
     vocab, ivocab = load_vocab(vocab_path)
     d = parse(Int64, match(r"-W[0-9]+", embedding_path).match[3:end])  # window
     V = length(vocab)
@@ -329,11 +332,13 @@ end
 
 # Compute change in embedding due to document removal
 function compute_IF_deltas(document::String, M, X::SparseMatrixCSC)
+    # this grabs X(k)
     Y = GloVe.doc2cooc(document, M.vocab, M.d)  # The perturbation
     affected_inds = unique(Y.rowval)  # Set of affected word vectors
     N = length(affected_inds)  # Number of vectors that will change
     deltas = Dict{Int64,Array{Float64,1}}()  # Hash deltas by word index
     if N != 0
+        # my condition X̃ = dropzeros(max.(0.0, X - Y + diff_bias_weight*Y))
         X̃ = dropzeros(max.(0.0, X - Y))  # non-neg catch incase doc out of corpus
         for idx in affected_inds
             gi = ∇Li(M.W, M.b_w, M.U, M.b_u, X, idx)  # original gradient
@@ -344,6 +349,41 @@ function compute_IF_deltas(document::String, M, X::SparseMatrixCSC)
     end
     return deltas
 end
+
+# Compute change in embedding due to document removal
+# MINE: when we don't want a perturbation co-occ matrix but a weighted one
+function my_compute_IF_deltas(document::String, M, X::SparseMatrixCSC,
+    target_indices::Array{Int64,1}, inv_hessians::Dict{Int64,Array{Float64,2}},
+    gradients::Dict{Int64,Array{Float64,1}}, filename::String, doc_num)
+
+    # println("Loading the differential bias weights")
+    df = CSV.read(filename, DataFrame; header=1)
+
+    # our B is our bias matrix
+    Y = GloVe.doc2cooc(document, M.vocab, M.d)  # The co-occ of the one document 
+    select_affected_inds = intersect(unique(Y.rowval), target_indices)  # consider less
+    N = length(select_affected_inds)  # Number of vectors that will change
+    deltas = Dict{Int64,Array{Float64,1}}()  # Hash deltas by word index
+
+    if N != 0
+        # we subtract a weighted corpus co-oc matrix
+        # non-neg catch incase doc out of corpus
+        # what happens if this is negative? I guess the max fn catches that!
+        X̃ = dropzeros(max.(0.0, X - df[doc_num, 4]*Y))
+
+        for idx in ProgressBar(select_affected_inds)
+            g̃i = ∇Li(M.W, M.b_w, M.U, M.b_u, X̃, idx)
+
+            # this is the change in embedding due to explicit bias inclusion
+            deltas[idx] = inv_hessians[idx] * (gradients[idx] - g̃i)
+            M.W[idx, :] = M.W[idx, :] + deltas[idx]
+        end
+    end
+    # println("made it to returning deltas")
+    return deltas
+end
+
+
 
 
 # Speed-up: avoid computing anything you don't need to
@@ -363,6 +403,7 @@ function compute_IF_deltas(document::String, M, X::SparseMatrixCSC,
     end
     return deltas
 end
+
 
 
 # Where we've already loaded the perturbation as a cooc matrix

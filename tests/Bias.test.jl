@@ -3,7 +3,8 @@
     include("../src/Bias.jl")
     !isdefined(Main, :GloVe) && include("../src/GloVe.jl")
 
-    embedding_path = "../embeddings/vectors-C0-V20-W8-D25-R0.05-E15-S1.bin"
+    # embedding_path = "../embeddings/vectors-C0-V20-W8-D25-R0.05-E15-S1.bin"
+    embedding_path = "../embeddings/vectors-C0-V20-W8-D75-R0.05-E300-S1.bin"
     global M = GloVe.load_model(embedding_path)
 
     @testset "Basic functioning" begin
@@ -17,7 +18,8 @@
     end
 
     @testset "Intution of WEAT" begin
-        (δ,D) = (8, 25)
+        # (δ,D) = (8, 25)
+        (δ,D) = (10, 75)
         dir_1 = 10 * rand(δ,D)
         dir_2 = 10 * rand(δ,D)
         S = dir_1 + rand(δ,D)

@@ -23,4 +23,4 @@ GloVe.save_text_vectors(\"$EMBED_TXT\", M.W, M.ivocab);
 
 python eval/python/evaluate.py --vocab_file $VOCAB --vectors_file $EMBED_TXT
 
-rm $EMBED_TXT
+# rm $EMBED_TXT

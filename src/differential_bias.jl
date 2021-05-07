@@ -69,12 +69,21 @@ end
 
 
 @everywhere function percent_diff_bias(document, M, X, inv_hessians, gradients, weat_idx_sets,
-                           effect_sizes)
+                           effect_sizes, doc_num)
     # Make the IF approximation
     target_indices = unique([i for set in weat_idx_sets for inds in set for i in inds])
-    deltas = GloVe.compute_IF_deltas(document, M, X, target_indices, inv_hessians, gradients)
+    deltas = GloVe.my_compute_IF_deltas(document, M, X, target_indices, inv_hessians, gradients, "results/diff_bias-C0-V20-W8-D25-R0.05-E15-S1.csv", doc_num)
+    
+    # println("size of deltas is:")
+    # println(size(deltas))
+    # M.W = M.W + deltas # maybe this should be minus? it is the change in the embeddings.
+    # deltas = GloVe.compute_IF_deltas(document, M, X, target_indices, inv_hessians, gradients)
+    
     # Compute the bias change
     B̃ = [Bias.effect_size(M.W, set, deltas) for set in weat_idx_sets]
+    # this is the percent difference bias. I don't think this makes sense for us 
+    # this is actually telling us 
+    # let's just do it. I think these should be zeros now
     return [100 * (b - b̃) / b for (b, b̃) in zip(effect_sizes, B̃)]
 end
 
@@ -95,7 +104,8 @@ end
         end
 
         ΔBIF = percent_diff_bias(doc, M, X, inv_hessians, gradients, weat_idx_sets,
-                                   effect_sizes)
+                                   effect_sizes, doc_num)
+       
         put!(results, (pid, doc_num, ΔBIF))
     end
     println(stdout, "Ending worker $(pid)")
@@ -106,7 +116,7 @@ end
 function main()
     embedding_path = get(ARGS, 1, "embeddings/vectors-C0-V20-W8-D25-R0.05-E15-S1.bin")
     corpus_path = get(ARGS, 2, "corpora/simplewikiselect.txt")
-    out_file = get(ARGS, 3, "results/diff_bias-C0-V20-W8-D25-R0.05-E15-S1.csv")
+    out_file = get(ARGS, 3, "results/diff_bias-C0-V20-W8-D25-R0.05-E15-S1-dummy-B2.csv")
 
     println("Computing Differential Bias")
     print("$(now()) - Loading model and corpus... ")
@@ -117,6 +127,7 @@ function main()
     println("Embedding: $(M.embedding_path) ($(M.D) dimensions)")
     println("Corpus: $(corpus.corpus_path) ($(corpus.num_words) tokens, $(corpus.num_documents) docs)")
 
+    place_holder=M.W
     # WEAT BIAS
     weat_idx_sets = [Bias.get_weat_idx_set(set, M.vocab) for set in Bias.WEAT_WORD_SETS]
     all_weat_indices = unique([i for set in weat_idx_sets for inds in set for i in inds])
@@ -135,6 +146,8 @@ function main()
     inv_hessians, gradients = pre_compute(M, X, all_weat_indices)
     println("Done.")
 
+    # println(all(M.W .== M.W))
+
     # Setup for parallel computations
     jobs = RemoteChannel(()->Channel{Tuple{Int64, String}}(100))
     results = RemoteChannel(()->Channel{Tuple}(100))
@@ -147,11 +160,24 @@ function main()
             @async remote_do(run_worker, p, jobs, results, M, X, inv_hessians, gradients, weat_idx_sets, effect_sizes)
         end
 
+        # I don't need to write a file
         @async handle_results(out_file, results, length(job_list))
     end
 
+    # here's where we would add the new model 
+    
     close(jobs)
     close(results)
+    
+    # Recalculating the WEAT bias after updating the offending word vectors
+    # WEAT BIAS
+    weat_idx_sets = [Bias.get_weat_idx_set(set, M.vocab) for set in Bias.WEAT_WORD_SETS]
+    all_weat_indices = unique([i for set in weat_idx_sets for inds in set for i in inds])
+    effect_sizes = [Bias.effect_size(M.W, set) for set in weat_idx_sets]
+    p_values = [Bias.p_value(M.W, set) for set in weat_idx_sets]
+    println("New WEAT effect sizes: $effect_sizes")
+    println("New WEAT p-values: $p_values")
+
     println("$(now()) - Done.")
 end
 

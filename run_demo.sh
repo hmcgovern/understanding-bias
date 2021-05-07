@@ -18,9 +18,9 @@ BASE_DIR=$(dirname $0)
 # scripts/embed.sh scripts/toy_embed.config
 # echo
 
-# # Evaluate analogy performance
+# Evaluate analogy performance
 # echo Evaluating analogy performace...
-# scripts/analogy.sh embeddings/vectors-C0-V20-W8-D25-R0.05-E15-S1.bin embeddings/vocab-C0-V20.txt
+# scripts/analogy.sh embeddings/vectors-C0-V20-W8-D75-R0.05-E300-S1.bin embeddings/global_vocab.txt
 # echo
 
 # Diff Bias
@@ -33,18 +33,19 @@ BASE_DIR=$(dirname $0)
 # julia --project src/make_perturbations.jl
 # echo
 
-# # Get Perturbations
-echo Training perturbed embeddings
-scripts/reembed.sh 'C0-V20-W8-D25-R0.05-E15-B1' results/perturbations embeddings 
-echo 
+# # # Get Perturbations
+# echo Training perturbed embeddings
+# scripts/reembed.sh 'C0-V20-W8-D25-R0.05-E15-B1' results/perturbations embeddings 
+# echo 
 # TARGET=$1
 # PERT_DIR=$2
 # EMBEDDING_DIR=$3
 
 # Run tests
-# echo Running tests
-# ./test
-# echo
+echo Running tests
+./test
+# julia --project tests/Bias.test.jl
+echo
 
 
 # Plot results

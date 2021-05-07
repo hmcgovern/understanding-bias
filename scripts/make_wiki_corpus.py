@@ -11,7 +11,7 @@ outname = path.join(base_dir, 'corpora', 'simplewikiselect')
 
 index = []  # Save information about articles as they've been processed.
 
-wiki = WikiCorpus(wiki_path, dictionary=True)  # dict=True avoids making vocab
+# wiki = WikiCorpus(wiki_path, dictionary=True)  # dict=True avoids making vocab
 wiki.metadata = True  # Want article titles
 print("Loading Wikipedia archive (this may take a few minutes)... ", end="")
 articles = list(wiki.get_texts())
